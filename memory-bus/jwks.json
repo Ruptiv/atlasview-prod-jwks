@@ -1,0 +1,12 @@
+{
+  "keys": [
+    {
+      "alg": "ES256",
+      "crv": "P-256",
+      "kid": "dev-jwt-key-1",
+      "kty": "EC",
+      "x": "WB0FBghWEKFPeKkZPL8rrGfaifpzgJ4qHfF2fVIBXB0",
+      "y": "uztsRXZXJ23-2__ZkKuiXSVcbtaZfNMxEyJzgzBVCDA"
+    }
+  ]
+}
