@@ -7,6 +7,14 @@
       "kty": "EC",
       "x": "WB0FBghWEKFPeKkZPL8rrGfaifpzgJ4qHfF2fVIBXB0",
       "y": "uztsRXZXJ23-2__ZkKuiXSVcbtaZfNMxEyJzgzBVCDA"
+    },
+    {
+      "alg": "ES256",
+      "crv": "P-256",
+      "kid": "prod-jwt-key-2",
+      "kty": "EC",
+      "x": "EvwFVwCRgZDin4jWoGi5PFo6p1r76cR4ELnaa4GbNro",
+      "y": "9e4hyOh532XW_BSGrBdWH9tWxNrdyRU3ZDZE3rpC5bY"
     }
   ]
 }
