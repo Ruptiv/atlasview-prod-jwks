@@ -1,0 +1,17 @@
+# Every file here is part of a production authentication trust root: the Memory
+# Bus fetches memory-bus/jwks.json from main at runtime and trusts it to
+# authenticate requests. Any change requires review by a code owner.
+#
+# These are listed as individuals rather than @Ruptiv/release-operators because
+# that team does not currently have access to THIS repository (verified
+# 2026-08-17), and GitHub silently ignores code owners that lack write access —
+# a team entry here would look like protection while enforcing nothing. If the
+# team is granted write access to this repo, replace the list below with
+# @Ruptiv/release-operators.
+
+*                       @jeffaroberts @mooneyt2670 @uncle-ruptiv @gclyle-ruptiv
+
+# Called out explicitly so the intent survives any future wildcard change.
+/memory-bus/jwks.json   @jeffaroberts @mooneyt2670 @uncle-ruptiv @gclyle-ruptiv
+/scripts/               @jeffaroberts @mooneyt2670 @uncle-ruptiv @gclyle-ruptiv
+/.github/               @jeffaroberts @mooneyt2670 @uncle-ruptiv @gclyle-ruptiv
