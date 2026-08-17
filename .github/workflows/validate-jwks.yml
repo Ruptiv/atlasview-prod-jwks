@@ -1,0 +1,73 @@
+name: validate-jwks
+
+# The Memory Bus verifier fetches memory-bus/jwks.json from this repository's
+# main branch at runtime (MEMORY_BUS_JWKS_URL), so whatever lands on main is
+# immediately trusted to authenticate production requests. This workflow is the
+# mechanical gate on that trust root; branch protection is the human half.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the proposed JWKS
+        uses: actions/checkout@v4
+        with:
+          # Need the base commit too, so the validator can compare an existing
+          # kid's key material against what it used to be.
+          fetch-depth: 0
+
+      - name: Extract the baseline JWKS from the base ref
+        id: baseline
+        run: |
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha || github.event.before }}"
+          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+            echo "no usable base commit; mutation check will be skipped"
+            echo "path=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git cat-file -e "$base:memory-bus/jwks.json" 2>/dev/null; then
+            git show "$base:memory-bus/jwks.json" > /tmp/baseline-jwks.json
+            echo "path=/tmp/baseline-jwks.json" >> "$GITHUB_OUTPUT"
+          else
+            echo "no jwks.json at base commit; mutation check will be skipped"
+            echo "path=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate
+        run: |
+          set -euo pipefail
+          if [ -n "${{ steps.baseline.outputs.path }}" ]; then
+            python3 scripts/validate_jwks.py memory-bus/jwks.json \
+              --baseline "${{ steps.baseline.outputs.path }}"
+          else
+            python3 scripts/validate_jwks.py memory-bus/jwks.json
+          fi
+
+      - name: Confirm no unexpected files changed
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          # This repository is a trust root, not a general-purpose repo. A PR that
+          # touches anything outside the JWKS, its validator, or docs deserves a
+          # human look before it can reach the verifier.
+          changed=$(git diff --name-only \
+            "${{ github.event.pull_request.base.sha }}" HEAD)
+          echo "changed files:"; echo "$changed"
+          unexpected=$(echo "$changed" | grep -vE \
+            '^(memory-bus/jwks\.json|scripts/validate_jwks\.py|\.github/|README|CODEOWNERS|.*\.md)' || true)
+          if [ -n "$unexpected" ]; then
+            echo "::error::unexpected paths changed in a JWKS trust-root PR:"
+            echo "$unexpected"
+            exit 1
+          fi
