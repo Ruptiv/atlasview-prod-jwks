@@ -2,8 +2,9 @@ name: validate-jwks
 
 # The Memory Bus verifier fetches memory-bus/jwks.json from this repository's
 # main branch at runtime (MEMORY_BUS_JWKS_URL), so whatever lands on main is
-# immediately trusted to authenticate production requests. This workflow is the
-# mechanical gate on that trust root; branch protection is the human half.
+# immediately trusted to authenticate production requests. The dev Bus reads
+# memory-bus/dev/jwks.json the same way; production never reads that file. This
+# workflow is the mechanical gate on both; branch protection is the human half.
 
 on:
   pull_request:
@@ -26,33 +27,25 @@ jobs:
           # kid's key material against what it used to be.
           fetch-depth: 0
 
-      - name: Extract the baseline JWKS from the base ref
-        id: baseline
+      - name: Validate each published key set
         run: |
           set -euo pipefail
           base="${{ github.event.pull_request.base.sha || github.event.before }}"
-          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
-            echo "no usable base commit; mutation check will be skipped"
-            echo "path=" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if git cat-file -e "$base:memory-bus/jwks.json" 2>/dev/null; then
-            git show "$base:memory-bus/jwks.json" > /tmp/baseline-jwks.json
-            echo "path=/tmp/baseline-jwks.json" >> "$GITHUB_OUTPUT"
-          else
-            echo "no jwks.json at base commit; mutation check will be skipped"
-            echo "path=" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Validate
-        run: |
-          set -euo pipefail
-          if [ -n "${{ steps.baseline.outputs.path }}" ]; then
-            python3 scripts/validate_jwks.py memory-bus/jwks.json \
-              --baseline "${{ steps.baseline.outputs.path }}"
-          else
-            python3 scripts/validate_jwks.py memory-bus/jwks.json
-          fi
+          if [ "$base" = "0000000000000000000000000000000000000000" ]; then base=""; fi
+          # Production's key set must exist. Dev's is checked when present.
+          for jwks in memory-bus/jwks.json memory-bus/dev/jwks.json; do
+            if [ ! -f "$jwks" ] && [ "$jwks" != "memory-bus/jwks.json" ]; then
+              echo "$jwks: not present; skipped"
+              continue
+            fi
+            if [ -n "$base" ] && git cat-file -e "$base:$jwks" 2>/dev/null; then
+              git show "$base:$jwks" > /tmp/baseline-jwks.json
+              python3 scripts/validate_jwks.py "$jwks" --baseline /tmp/baseline-jwks.json
+            else
+              echo "$jwks: no copy at the base commit; mutation check skipped"
+              python3 scripts/validate_jwks.py "$jwks"
+            fi
+          done
 
       - name: Confirm no unexpected files changed
         if: github.event_name == 'pull_request'
@@ -65,7 +58,7 @@ jobs:
             "${{ github.event.pull_request.base.sha }}" HEAD)
           echo "changed files:"; echo "$changed"
           unexpected=$(echo "$changed" | grep -vE \
-            '^(memory-bus/jwks\.json|scripts/validate_jwks\.py|\.github/|README|CODEOWNERS|.*\.md)' || true)
+            '^(memory-bus/jwks\.json|memory-bus/dev/jwks\.json|scripts/validate_jwks\.py|\.github/|README|CODEOWNERS|.*\.md)' || true)
           if [ -n "$unexpected" ]; then
             echo "::error::unexpected paths changed in a JWKS trust-root PR:"
             echo "$unexpected"
