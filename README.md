@@ -40,6 +40,14 @@ python3 scripts/validate_jwks.py memory-bus/jwks.json --baseline /tmp/baseline-j
 | `prod-jwt-key-2` | Production Memory Bus recall/actor tokens |
 | `dev-jwt-key-1` | Legacy development key, slated for removal. Removal is sequenced behind confirming that no trusted consumer still presents tokens signed by it. |
 
+## Dev key set
+
+`memory-bus/dev/jwks.json` is the key set the atlasview-dev Memory Bus verifies against. It is a separate file so production's key set never trusts a dev key; the production Bus reads only `memory-bus/jwks.json`.
+
+| `kid` | Purpose |
+|---|---|
+| `dev-kms-key-1` | atlasview-dev recall/actor tokens: KMS key `atlasview-dev-recall/recall-signing`, version 1 (EC P-256) |
+
 ## Rotating a signing key
 
 The cardinal rule: **rotation adds a new `kid`; it never repoints an existing

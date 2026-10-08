@@ -1,0 +1,12 @@
+{
+  "keys": [
+    {
+      "alg": "ES256",
+      "crv": "P-256",
+      "kid": "dev-kms-key-1",
+      "kty": "EC",
+      "x": "NxEMD55nyK5tM3LkoU5C3V3UYOuVh6pv7osupHfTROI",
+      "y": "HWflUSlTtVG9PKWuXzcg0cHfKunjVrkOUmfZLnv1Wuc"
+    }
+  ]
+}
